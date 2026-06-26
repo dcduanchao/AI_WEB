@@ -71,19 +71,14 @@ server {
         try_files $uri $uri/ /aiweb/index.html;
     }
 
-    location /api/ {
-        proxy_pass http://127.0.0.1:8888/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
 }
 ```
 
 说明：
 
 - `try_files ... /aiweb/index.html` 用来处理 Vue Router 的 history 模式刷新问题。
-- `location /api/` 是后端接口反代，开发环境里 `vite.config.ts` 的 `server.proxy` 只对本地生效。
+- 前端请求现在直接指向后端完整地址，开发环境用 `http://127.0.0.1:8888/aiapi`，生产环境用 `https://ai.du-ai.top/aiapi`。
+- 后端统一使用 `server.servlet.context-path=/aiapi`，前端不再依赖 Vite 代理。
 
 ### Docker 场景
 
@@ -153,5 +148,5 @@ systemctl reload nginx
 ## 8. 需要注意的点
 
 - 如果站点不是 `/aiweb/`，而是别的子目录，`vite.config.ts` 里的 `base` 要同步改掉。
-- 如果后端地址不是 `127.0.0.1:8888`，Nginx 的 `proxy_pass` 也要改。
+- 如果后端地址或域名调整，更新 `.env.development` 和 `.env.production` 里的 `VITE_API_BASE`。
 - 不建议把多个项目的构建结果混在同一个目录里。

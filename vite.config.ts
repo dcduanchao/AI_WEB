@@ -13,12 +13,5 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: {
-      // 走代理免 CORS，前端请求相对路径 /api/*
-      '/api': {
-        target: 'http://localhost:8888',
-        changeOrigin: true,
-      },
-    },
   },
 })
