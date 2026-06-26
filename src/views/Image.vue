@@ -11,7 +11,7 @@
         <el-select v-model="size" style="width: 220px">
           <el-option v-for="option in sizes" :key="option.value" :label="option.label" :value="option.value" />
         </el-select>
-        <el-input-number v-model="count" :min="1" :max="4" />
+        <el-input-number v-model="count" :min="1" :max="10" />
       </div>
       <el-input v-model="prompt" type="textarea" :rows="3" resize="none" placeholder="描述你想生成的图片"
         style="margin-top: 12px" />
