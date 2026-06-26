@@ -91,7 +91,7 @@ Container: /usr/share/nginx/html
 
 那么本项目的构建产物应放到宿主机的：
 
-```text
+```textZ
 /root/nginx/html/aiweb/
 ```
 
