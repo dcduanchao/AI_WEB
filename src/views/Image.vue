@@ -30,7 +30,16 @@
     </section>
 
     <section class="workbench-grid">
-      <aside class="conversation panel">
+      <div v-if="isMobile" class="mobile-panels">
+        <button class="mobile-panel-btn" type="button" @click="conversationOpen = !conversationOpen">
+          {{ conversationOpen ? '隐藏会话' : '显示会话' }}
+        </button>
+        <button class="mobile-panel-btn" type="button" @click="configOpen = !configOpen">
+          {{ configOpen ? '隐藏参数' : '显示参数' }}
+        </button>
+      </div>
+
+      <aside v-show="!isMobile || conversationOpen" class="conversation panel">
         <div class="panel-title">会话</div>
         <div class="conversation-list">
           <button
@@ -184,7 +193,7 @@
         </section>
       </main>
 
-      <aside class="sidebar">
+      <aside v-show="!isMobile || configOpen" class="sidebar">
         <section class="panel side-card">
           <div class="side-card-header">
             <div class="panel-title">服务配置</div>
@@ -301,6 +310,9 @@ const items = ref<ImageItem[]>([])
 const elapsedSeconds = ref(0)
 const activeSessionId = ref('')
 const sessions = ref<SessionItem[]>([])
+const isMobile = ref(false)
+const conversationOpen = ref(false)
+const configOpen = ref(false)
 
 const timer = ref<number | null>(null)
 const sizes = [
@@ -329,6 +341,8 @@ const hasSuccess = computed(() => successCount.value > 0)
 const currentSizeLabel = computed(() => sizes.find((item) => item.value === size.value)?.label || size.value)
 
 onMounted(async () => {
+  syncViewport()
+  window.addEventListener('resize', syncViewport)
   await models.load()
   if (models.aiCodes.length) {
     aiCode.value = models.aiCodes[0]
@@ -337,7 +351,10 @@ onMounted(async () => {
   createSession()
 })
 
-onBeforeUnmount(stopTimer)
+onBeforeUnmount(() => {
+  stopTimer()
+  window.removeEventListener('resize', syncViewport)
+})
 
 watch(
   () => prompt.value.trim(),
@@ -352,6 +369,14 @@ watch(
 
 function createSessionId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function syncViewport() {
+  isMobile.value = window.innerWidth <= 980
+  if (!isMobile.value) {
+    conversationOpen.value = true
+    configOpen.value = true
+  }
 }
 
 function formatSessionTitle(value: string) {
@@ -671,6 +696,19 @@ async function submit() {
   gap: 14px;
   min-height: calc(100vh - 240px);
   flex: 1;
+}
+
+.mobile-panels {
+  display: none;
+}
+
+.mobile-panel-btn {
+  border: 1px solid #cfe4db;
+  background: rgba(255, 255, 255, 0.94);
+  color: #245443;
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 13px;
 }
 
 .conversation,
@@ -1120,6 +1158,12 @@ async function submit() {
     grid-template-columns: 1fr;
   }
 
+  .mobile-panels {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
   .conversation {
     order: 2;
   }
@@ -1132,6 +1176,48 @@ async function submit() {
   .prompt-box :deep(.el-textarea__inner) {
     font-size: 20px;
     min-height: 110px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .image-workbench {
+    padding: 0;
+    border-radius: 20px;
+  }
+
+  .hero,
+  .conversation,
+  .prompt,
+  .workspace-panel,
+  .side-card {
+    padding: 12px;
+  }
+
+  .prompt-box :deep(.el-textarea__inner) {
+    font-size: 16px;
+    min-height: 96px !important;
+    padding: 14px;
+  }
+
+  .prompt-footer,
+  .workspace-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .generate-btn,
+  .pager {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ratio-grid,
+  .quality-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

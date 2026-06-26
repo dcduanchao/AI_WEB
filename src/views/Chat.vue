@@ -1,9 +1,12 @@
 <template>
   <div class="chat-shell">
-    <aside class="conversation-panel">
+    <aside v-show="!isMobile || sessionPanelOpen" class="conversation-panel">
       <div class="panel-header">
         <div class="panel-title">会话</div>
         <div class="panel-actions">
+          <button v-if="isMobile" class="icon-btn" type="button" @click="sessionPanelOpen = false">
+            收起
+          </button>
           <button class="icon-btn" type="button" :disabled="sending" @click="createSession">
             <el-icon><Plus /></el-icon>
           </button>
@@ -43,6 +46,12 @@
     </aside>
 
     <section class="chat-stage">
+      <div v-if="isMobile" class="mobile-toolbar">
+        <button class="mobile-toolbar-btn" type="button" @click="sessionPanelOpen = !sessionPanelOpen">
+          {{ sessionPanelOpen ? '隐藏会话' : '显示会话' }}
+        </button>
+      </div>
+
       <div v-if="messages.length" ref="listRef" class="messages">
         <div v-for="(m, i) in messages" :key="`${currentSessionId}-${i}`" class="msg" :class="m.role">
           <div class="avatar">{{ m.role === 'user' ? '我' : 'G' }}</div>
@@ -99,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Delete, Plus, Promotion, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import MarkdownIt from 'markdown-it'
@@ -165,6 +174,8 @@ const currentSessionId = ref(sessions.value[0].id)
 const input = ref('')
 const sending = ref(false)
 const listRef = ref<HTMLElement>()
+const isMobile = ref(false)
+const sessionPanelOpen = ref(false)
 let controller: AbortController | null = null
 
 const currentSession = computed(
@@ -181,12 +192,25 @@ const messages = computed<ChatMessage[]>({
 const canSend = computed(() => !!aiCode.value && !!model.value && !!input.value.trim())
 
 onMounted(async () => {
+  syncViewport()
+  window.addEventListener('resize', syncViewport)
   await models.load()
   if (models.aiCodes.length) {
     aiCode.value = models.aiCodes[0]
     onProviderChange()
   }
 })
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', syncViewport)
+})
+
+function syncViewport() {
+  isMobile.value = window.innerWidth <= 960
+  if (!isMobile.value) {
+    sessionPanelOpen.value = true
+  }
+}
 
 function onProviderChange() {
   const list = models.modelsOf(aiCode.value)
@@ -437,6 +461,19 @@ function stop() {
   position: relative;
 }
 
+.mobile-toolbar {
+  display: none;
+}
+
+.mobile-toolbar-btn {
+  border: 1px solid rgba(87, 72, 57, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  color: #2c241e;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
 .messages {
   flex: 1;
   overflow: auto;
@@ -625,6 +662,11 @@ function stop() {
     border-bottom: 1px solid rgba(87, 72, 57, 0.08);
   }
 
+  .mobile-toolbar {
+    display: flex;
+    padding: 12px 12px 0;
+  }
+
   .session-list {
     max-height: 180px;
   }
@@ -646,11 +688,56 @@ function stop() {
   }
 
   .composer-side {
+    width: 100%;
     gap: 8px;
+    padding-left: 0;
+    justify-content: space-between;
   }
 
   .composer-model {
-    width: 120px;
+    width: calc(100% - 46px);
+  }
+}
+
+@media (max-width: 640px) {
+  .panel-header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .messages {
+    padding: 18px 12px 10px;
+  }
+
+  .msg {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .bubble {
+    max-width: 100%;
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+
+  .composer-wrap {
+    padding: 10px;
+  }
+
+  .composer {
+    flex-wrap: wrap;
+    border-radius: 18px;
+    padding: 10px;
+  }
+
+  .composer-input {
+    width: 100%;
   }
 }
 </style>
