@@ -14,10 +14,6 @@
       </div>
 
       <div class="hero-actions">
-        <el-button round type="success" class="nav-btn is-active">
-          <el-icon><MagicStick /></el-icon>
-          工作台
-        </el-button>
         <el-button round plain>
           <el-icon><Picture /></el-icon>
           图库
@@ -25,10 +21,6 @@
         <el-button round plain>
           <el-icon><Collection /></el-icon>
           提示词库
-        </el-button>
-        <el-button round plain>
-          <el-icon><Setting /></el-icon>
-          设置
         </el-button>
         <el-button round type="success" @click="createSession">
           <el-icon><Plus /></el-icon>
@@ -71,7 +63,7 @@
               <span v-if="hasSuccess" class="tag tag-muted">已保存</span>
             </div>
             <div class="prompt-tools">
-              <el-button round plain>
+              <el-button round plain :loading="inspiring" :disabled="!canInspire" @click="handleInspirePrompt">
                 <el-icon><Opportunity /></el-icon>
                 灵感提示词
               </el-button>
@@ -304,6 +296,7 @@ const quality = ref('自动')
 const qualityOptions = ['自动', '低', '中', '高']
 const loading = ref(false)
 const enriching = ref(false)
+const inspiring = ref(false)
 const items = ref<ImageItem[]>([])
 const elapsedSeconds = ref(0)
 const activeSessionId = ref('')
@@ -326,6 +319,7 @@ const sizes = [
 
 const canSubmit = computed(() => !!aiCode.value && !!model.value && !!prompt.value.trim())
 const canEnrich = computed(() => !!aiCode.value && !!promptModel.value && !!prompt.value.trim() && !enriching.value)
+const canInspire = computed(() => !!aiCode.value && !!promptModel.value && !inspiring.value)
 const providerModels = computed(() => models.modelsOf(aiCode.value))
 const previewUrls = computed(() => items.value.filter((item) => item.status === 'success').map((item) => item.url))
 const successCount = computed(() => items.value.filter((item) => item.status === 'success').length)
@@ -493,6 +487,37 @@ async function handleEnhancePrompt() {
   }
 }
 
+async function handleInspirePrompt() {
+  if (!aiCode.value || !promptModel.value || inspiring.value) return
+
+  inspiring.value = true
+  try {
+    const res = await chat({
+      aiCode: aiCode.value,
+      model: promptModel.value,
+      messages: [
+        {
+          role: 'system',
+          content: [
+            '请生成一条可直接用于图像生成的中文提示词。',
+            '提示词需要包含主体、场景、构图、光线、风格、细节与氛围。',
+            '只输出提示词正文，不要解释，不要加标题。',
+          ].join(''),
+        },
+        {
+          role: 'user',
+          content: prompt.value.trim() || '请给我一条高质量、细节丰富、适合直接生图的中文提示词。',
+        },
+      ],
+    })
+
+    prompt.value = (res.content || '').trim()
+    ElMessage.success('已生成灵感提示词')
+  } finally {
+    inspiring.value = false
+  }
+}
+
 async function generateOne(index: number, payload: Parameters<typeof generateImage>[0]) {
   try {
     const res = await generateImage(payload)
@@ -638,10 +663,6 @@ async function submit() {
   margin-top: 4px;
   color: #6c7c75;
   font-size: 13px;
-}
-
-.nav-btn.is-active {
-  box-shadow: 0 8px 18px rgba(23, 166, 115, 0.2);
 }
 
 .workbench-grid {

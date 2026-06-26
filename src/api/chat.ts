@@ -5,6 +5,3 @@ export function chat(data: ChatRequest) {
   return http.post('/chat', data) as unknown as Promise<ChatResponse>
 }
 
-export function enhancePrompt(data: ChatRequest) {
-  return http.post('/chat', data) as unknown as Promise<ChatResponse>
-}
